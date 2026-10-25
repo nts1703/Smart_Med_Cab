@@ -1,0 +1,14 @@
+.env
+web/.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.vscode/
+collector/data/raw/*
+!collector/data/raw/.gitkeep
+collector/data/processed/*
+!collector/data/processed/.gitkeep
+collector/output/*
+!collector/output/.gitkeep
