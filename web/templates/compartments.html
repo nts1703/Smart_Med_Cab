@@ -1,0 +1,207 @@
+
+{% extends "base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/compartments.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="comp-page">
+    <div class="comp-heading">
+        <div>
+            <div class="eyebrow">QUẢN LÝ NGĂN THUỐC</div>
+            <h1>Phân bổ thuốc</h1>
+            <p>
+                Gán thuốc đã thêm vào từng ngăn của tủ.
+                Mỗi ngăn chứa một loại thuốc tại một thời điểm.
+            </p>
+        </div>
+    </div>
+
+    <div class="comp-notice">
+        <strong>Lưu ý:</strong>
+        Việc gán thuốc trên website không tự đưa thuốc vào
+        ngăn vật lý. Hãy tự kiểm tra nhãn, hàm lượng và
+        vị trí chứa thuốc trước khi sử dụng.
+    </div>
+
+    {% if not devices %}
+    <div class="comp-empty">
+        <h2>Chưa có tủ thuốc</h2>
+        <p>
+            Bạn cần đăng ký một tủ trước khi phân bổ thuốc.
+        </p>
+        <a href="{{ url_for('devices.index') }}"
+           class="comp-primary">
+            Đi tới Thiết bị IoT
+        </a>
+    </div>
+    {% elif not medicines %}
+    <div class="comp-notice">
+        Danh sách thuốc đang sử dụng của bạn đang trống.
+        <a href="{{ url_for('medicines.index') }}">
+            Thêm thuốc tại đây
+        </a>
+        để có thể gán vào các ngăn.
+    </div>
+    {% endif %}
+
+    {% for device in devices %}
+    <section class="comp-device-card">
+        <div class="comp-device-head">
+            <div>
+                <h2>{{ device.device_name }}</h2>
+                <p>
+                    Mã tủ: {{ device.device_code }}
+                    · Phiên bản phân bổ/lịch: {{ device.schedule_revision }}
+                </p>
+            </div>
+            <span class="comp-device-status">
+                {{ "Đang sử dụng" if device.operational_status == "active"
+                   else "Đang tạm ngừng" }}
+            </span>
+        </div>
+
+        <div class="comp-grid">
+            {% for slot in assignments.get(device.id, []) %}
+            <article class="comp-slot">
+                <div class="comp-slot-top">
+                    <span class="comp-slot-number">
+                        {{ slot.compartment_number }}
+                    </span>
+                    {% if slot.user_medicine_id %}
+                    <span class="comp-tag assigned">Đã gán thuốc</span>
+                    {% else %}
+                    <span class="comp-tag">Chưa gán</span>
+                    {% endif %}
+                </div>
+
+                <h3>Ngăn {{ slot.compartment_number }}</h3>
+
+                <div class="comp-current">
+                    {% if slot.user_medicine_id %}
+                    <strong>
+                        {{ slot.assigned_name or
+                           "Không tìm thấy tên thuốc" }}
+                    </strong>
+                    <small>
+                        {{ slot.assigned_strength or
+                           "Chưa có hàm lượng" }}
+                    </small>
+                    {% if not slot.medicine_active %}
+                    <small class="comp-warning-text">
+                        Thuốc này đã được lưu trữ
+                    </small>
+                    {% endif %}
+                    {% else %}
+                    <strong>Ngăn đang trống</strong>
+                    <small>Chưa chọn thuốc</small>
+                    {% endif %}
+                </div>
+
+                <form method="POST"
+                      action="{{ url_for('compartments.assign',
+                          device_id=device.id,
+                          number=slot.compartment_number) }}"
+                      class="comp-form">
+
+                    <input type="hidden" name="csrf_token"
+                           value="{{ csrf_token() }}">
+
+                    <label for="slot-{{ device.id }}-{{ slot.compartment_number }}">
+                        Thuốc trong ngăn
+                    </label>
+
+                    <select
+                        id="slot-{{ device.id }}-{{ slot.compartment_number }}"
+                        name="user_medicine_id"
+                        {% if not slot.is_enabled %}disabled{% endif %}>
+
+                        <option value=""
+                                {% if not slot.user_medicine_id %}selected{% endif %}>
+                            -- Không gán thuốc --
+                        </option>
+
+                        {% if slot.user_medicine_id
+                              and slot.user_medicine_id not in active_medicine_ids %}
+                        <option value="{{ slot.user_medicine_id }}" selected>
+                            {{ slot.assigned_name or "Thuốc đã lưu trữ" }}
+                        </option>
+                        {% endif %}
+
+                        {% for medicine in medicines %}
+                        <option value="{{ medicine.id }}"
+                                {% if slot.user_medicine_id == medicine.id %}
+                                selected
+                                {% endif %}>
+                            {{ medicine.medicine_name }}
+                            {% if medicine.strength %}
+                            – {{ medicine.strength }}
+                            {% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    {% if slot.active_schedule_count %}
+                    <p class="comp-schedule-alert">
+                        Ngăn đang có {{ slot.active_schedule_count }}
+                        lịch nhắc hoạt động. Cần tạm dừng lịch
+                        trước khi đổi thuốc.
+                    </p>
+                    {% endif %}
+
+                    <button type="submit" class="comp-save"
+                            {% if not slot.is_enabled %}disabled{% endif %}>
+                        Lưu phân bổ
+                    </button>
+                </form>
+            </article>
+            {% endfor %}
+        </div>
+
+        {% if assignments.get(device.id, [])|length != 4 %}
+        <p class="comp-warning-text">
+            Tủ này chưa có đủ 4 ngăn trong MySQL.
+            Hãy kiểm tra lại bảng device_compartments.
+        </p>
+        {% endif %}
+    </section>
+    {% endfor %}
+
+    {% if history %}
+    <section class="comp-history">
+        <h2>Lịch sử phân bổ gần đây</h2>
+        <div class="comp-history-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Thiết bị</th>
+                        <th>Ngăn</th>
+                        <th>Thuốc cũ</th>
+                        <th>Thuốc mới</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in history %}
+                    <tr>
+                        <td>
+                            {{ item.changed_at.strftime('%d/%m/%Y %H:%M') }}
+                            UTC
+                        </td>
+                        <td>{{ item.device_name }}</td>
+                        <td>{{ item.compartment_number }}</td>
+                        <td>
+                            {{ item.previous_medicine_name or "Trống" }}
+                        </td>
+                        <td>{{ item.new_medicine_name or "Trống" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+</section>
+{% endblock %}

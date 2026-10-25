@@ -1,0 +1,260 @@
+
+{% extends "base.html" %}
+{% block page_css %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/medicines.css') }}">
+{% endblock %}
+{% block content %}
+<section class="med-page">
+    <div class="med-heading">
+        <div>
+            <div class="eyebrow">QUẢN LÝ THUỐC CÁ NHÂN</div>
+            <h1>Thuốc của tôi</h1>
+            <p>Chọn từ danh mục hoặc nhập thuốc theo thông tin trên bao bì.</p>
+        </div>
+        <div class="med-count">
+            <strong>{{ counts.active_total }}</strong>
+            <span>Thuốc đang quản lý</span>
+        </div>
+    </div>
+    {% if not show_archived %}
+    <section class="med-panel">
+        <h2>Thêm thuốc mới</h2>
+        <p class="med-subtitle">
+            Thuốc từ danh mục có thể chưa được xác minh tình trạng lưu hành.
+            Hãy đối chiếu với nhãn thuốc hoặc đơn thuốc.
+        </p>
+        <form id="addMedicineForm" method="POST"
+              action="{{ url_for('medicines.add_medicine') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="med-mode">
+                <label>
+                    <input type="radio" name="mode" value="catalog"
+                           id="modeCatalog" checked>
+                    Chọn trong danh mục
+                </label>
+                <label>
+                    <input type="radio" name="mode" value="manual"
+                           id="modeManual">
+                    Tự nhập thuốc
+                </label>
+            </div>
+            <div id="catalogPanel">
+                <label class="med-label" for="medicineQuery">
+                    Tìm tên thuốc, hoạt chất hoặc số đăng ký
+                </label>
+                <input id="medicineQuery" class="med-input"
+                       type="search"
+                       placeholder="Gõ tên thuốc hoặc để trống xem A–Z"
+                       autocomplete="off">
+                <input type="hidden" id="selectedId"
+                       name="drug_catalog_id" value="">
+                <div id="selectedMedicine" class="med-selected" hidden></div>
+                <div id="catalogResults" class="med-results"
+                     data-search-url="{{ url_for('medicines.drug_search_api') }}">
+                    <p class="med-empty">Đang tải danh mục thuốc...</p>
+                </div>
+                <button type="button" id="loadMoreBtn"
+                        class="med-secondary-button" hidden>
+                    Hiển thị thêm thuốc
+                </button>
+            </div>
+            <div id="manualPanel" hidden>
+                <div class="med-field">
+                    <label class="med-label" for="manualName">Tên thuốc *</label>
+                    <input type="text" id="manualName" name="medicine_name"
+                           class="med-input" maxlength="255"
+                           placeholder="Nhập tên trên bao bì">
+                </div>
+                <div class="med-two-cols">
+                    <div class="med-field">
+                        <label class="med-label" for="manualStrength">
+                            Hàm lượng
+                        </label>
+                        <input type="text" id="manualStrength" name="strength"
+                               class="med-input" maxlength="255"
+                               placeholder="Ví dụ: 500 mg">
+                    </div>
+                    <div class="med-field">
+                        <label class="med-label" for="manualForm">
+                            Dạng bào chế
+                        </label>
+                        <input type="text" id="manualForm" name="dosage_form"
+                               class="med-input" maxlength="255"
+                               placeholder="Ví dụ: Viên nén">
+                    </div>
+                </div>
+            </div>
+            <div class="med-field">
+                <label class="med-label" for="medicineNotes">Ghi chú</label>
+                <textarea id="medicineNotes" name="notes" rows="3"
+                          maxlength="2000" class="med-input"
+                          placeholder="Ví dụ: Hướng dẫn trên đơn thuốc"></textarea>
+            </div>
+            <button type="submit" class="med-primary-button"
+                    id="addMedicineSubmit">
+                Thêm vào tủ thuốc
+            </button>
+        </form>
+    </section>
+    {% endif %}
+    <section class="med-panel">
+        <div class="med-list-header">
+            <div>
+                <h2>
+                    {% if show_archived %}
+                        Thuốc đã lưu trữ
+                    {% else %}
+                        Danh sách thuốc của tôi
+                    {% endif %}
+                </h2>
+                <p class="med-subtitle">
+                    {% if show_archived %}
+                        {{ counts.archived_total }} thuốc đã lưu trữ
+                    {% else %}
+                        {{ counts.active_total }} thuốc đang quản lý
+                    {% endif %}
+                </p>
+            </div>
+            {% if show_archived %}
+            <a class="med-secondary-button"
+               href="{{ url_for('medicines.index') }}">
+                Quay lại danh sách
+            </a>
+            {% else %}
+            <a class="med-secondary-button"
+               href="{{ url_for('medicines.index', view='archived') }}">
+                Đã lưu trữ ({{ counts.archived_total }})
+            </a>
+            {% endif %}
+        </div>
+        {% if medicines %}
+        <div class="med-list">
+            {% for medicine in medicines %}
+            <article class="med-item">
+                <div class="med-item-top">
+                    <div>
+                        <h3>{{ medicine.medicine_name }}</h3>
+                        <p>
+                            {{ medicine.strength or "Chưa có hàm lượng" }}
+                            · {{ medicine.dosage_form or "Chưa có dạng bào chế" }}
+                        </p>
+                        {% if medicine.registration_number %}
+                        <p>SĐK: {{ medicine.registration_number }}</p>
+                        {% endif %}
+                    </div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        {% if medicine.entry_source == "catalog" %}
+                        <span class="med-tag">Từ danh mục</span>
+                        {% if medicine.catalog_verified %}
+                        <span class="med-result-badge verified">
+                            Đã đối chiếu
+                        </span>
+                        {% else %}
+                        <span class="med-result-badge">
+                            Chưa xác minh
+                        </span>
+                        {% endif %}
+                        {% else %}
+                        <span class="med-tag manual">Nhập thủ công</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if medicine.notes %}
+                <p class="med-item-note">{{ medicine.notes }}</p>
+                {% endif %}
+                <div class="med-item-actions">
+                    <details class="med-edit">
+                        <summary>Chỉnh sửa</summary>
+                        <form method="POST"
+                              action="{{ url_for('medicines.edit_medicine', medicine_id=medicine.id) }}">
+                            <input type="hidden" name="csrf_token"
+                                   value="{{ csrf_token() }}">
+                            {% if medicine.entry_source == "manual" %}
+                            <div class="med-field">
+                                <label class="med-label">Tên thuốc</label>
+                                <input type="text" name="medicine_name"
+                                       class="med-input" maxlength="255"
+                                       value="{{ medicine.medicine_name }}"
+                                       required>
+                            </div>
+                            <div class="med-two-cols">
+                                <div class="med-field">
+                                    <label class="med-label">Hàm lượng</label>
+                                    <input type="text" name="strength"
+                                           class="med-input" maxlength="255"
+                                           value="{{ medicine.strength or '' }}">
+                                </div>
+                                <div class="med-field">
+                                    <label class="med-label">Dạng bào chế</label>
+                                    <input type="text" name="dosage_form"
+                                           class="med-input" maxlength="255"
+                                           value="{{ medicine.dosage_form or '' }}">
+                                </div>
+                            </div>
+                            {% else %}
+                            <p class="med-help">
+                                Thuốc chọn từ danh mục chỉ chỉnh sửa được ghi chú.
+                                Nếu chọn nhầm sản phẩm, hãy thêm sản phẩm đúng.
+                            </p>
+                            {% endif %}
+                            <div class="med-field">
+                                <label class="med-label">Ghi chú</label>
+                                <textarea name="notes" class="med-input"
+                                          rows="2" maxlength="2000">{{ medicine.notes or '' }}</textarea>
+                            </div>
+                            <button type="submit" class="med-primary-button">
+                                Lưu thay đổi
+                            </button>
+                        </form>
+                    </details>
+                    {% if medicine.is_active %}
+                    <form method="POST"
+                          action="{{ url_for('medicines.archive_medicine', medicine_id=medicine.id) }}">
+                        <input type="hidden" name="csrf_token"
+                               value="{{ csrf_token() }}">
+                        <button type="submit" class="med-secondary-button">
+                            Lưu trữ
+                        </button>
+                    </form>
+                    {% else %}
+                    <form method="POST"
+                          action="{{ url_for('medicines.restore_medicine', medicine_id=medicine.id) }}">
+                        <input type="hidden" name="csrf_token"
+                               value="{{ csrf_token() }}">
+                        <button type="submit" class="med-secondary-button">
+                            Khôi phục
+                        </button>
+                    </form>
+                    {% endif %}
+                    <form method="POST"
+                          action="{{ url_for('medicines.delete_medicine', medicine_id=medicine.id) }}"
+                          onsubmit="return confirm('Bạn chắc chắn muốn xóa vĩnh viễn thuốc này khỏi tài khoản?');">
+                        <input type="hidden" name="csrf_token"
+                               value="{{ csrf_token() }}">
+                        <input type="hidden" name="return_view"
+                               value="{{ 'archived' if show_archived else '' }}">
+                        <button type="submit" class="med-danger-button">
+                            Xóa vĩnh viễn
+                        </button>
+                    </form>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="med-empty-list">
+            <strong>Chưa có thuốc nào ở đây</strong>
+            <p>
+                {% if show_archived %}
+                    Bạn chưa lưu trữ thuốc nào.
+                {% else %}
+                    Hãy tìm thuốc trong danh mục hoặc tự nhập để bắt đầu.
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </section>
+</section>
+<script defer src="{{ url_for('static', filename='js/medicines.js') }}"></script>
+{% endblock %}

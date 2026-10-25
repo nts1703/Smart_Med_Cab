@@ -1,0 +1,72 @@
+
+{% extends "base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/history.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="history-page">
+    <div class="eyebrow">THEO DÕI TỦ THUỐC</div>
+    <h1>Lịch sử lấy thuốc</h1>
+    <p class="history-subtitle">
+        Các sự kiện được nhận từ Arduino Nano
+        thông qua ESP32 và Flask.
+    </p>
+
+    <div class="history-notice">
+        <strong>Lưu ý:</strong>
+        Trạng thái "Đã phát hiện lấy thuốc"
+        chỉ xác nhận cảm biến ghi nhận thao tác
+        tại ngăn thuốc, không xác nhận người dùng
+        đã uống thuốc.
+    </div>
+
+    <div class="history-summary">
+        <div class="history-stat">
+            <span>Đã phát hiện lấy</span>
+            <strong id="takenCount">0</strong>
+        </div>
+        <div class="history-stat">
+            <span>Lấy nhầm ngăn</span>
+            <strong id="wrongCount">0</strong>
+        </div>
+        <div class="history-stat">
+            <span>Bỏ lỡ</span>
+            <strong id="missedCount">0</strong>
+        </div>
+    </div>
+
+    <section class="history-panel">
+        <div class="history-panel-head">
+            <div>
+                <h2>Sự kiện gần đây</h2>
+                <p>
+                    Hiển thị tối đa 100 sự kiện mới nhất.
+                </p>
+            </div>
+            <div class="history-live">
+                <span class="history-live-dot"></span>
+                Tự cập nhật mỗi 5 giây
+            </div>
+        </div>
+
+        <p class="history-updated"
+           id="historyUpdated">
+            Đang tải dữ liệu...
+        </p>
+
+        <div id="historyList"
+             data-url="{{ url_for('history.history_data') }}">
+            <div class="history-empty">
+                Đang đọc lịch sử từ MySQL...
+            </div>
+        </div>
+    </section>
+</section>
+
+<script defer
+        src="{{ url_for('static', filename='js/history.js') }}">
+</script>
+{% endblock %}

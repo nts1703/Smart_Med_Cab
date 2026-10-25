@@ -1,0 +1,142 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title|default("Dashboard") }} | SmartMed</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/auth.css') }}">
+    {% block page_css %}{% endblock %}
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <a href="{{ url_for('dashboard') }}" class="brand">
+                <div class="brand-icon">+</div>
+                <div>
+                    <div class="brand-name">SmartMed</div>
+                    <div class="brand-sub">Medicine Cabinet</div>
+                </div>
+            </a>
+
+            <div class="sidebar-label">QUẢN LÝ</div>
+
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard') }}"
+                   class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+                    <span class="nav-icon">▦</span>
+                    <span>Tổng quan</span>
+                </a>
+
+                <a href="{{ url_for('medicines.index') }}"
+                   class="nav-link {% if active_page == 'medicines' %}active{% endif %}">
+                    <span class="nav-icon">✚</span>
+                    <span>Quản lý thuốc</span>
+                </a>
+
+                <a href="{{ url_for('schedules.index') }}"
+                   class="nav-link {% if active_page == 'schedules' %}active{% endif %}">
+                    <span class="nav-icon">◷</span>
+                    <span>Lịch uống thuốc</span>
+                </a>
+
+                <a href="{{ url_for('history.index') }}"
+                   class="nav-link {% if active_page == 'history' %}active{% endif %}">
+                    <span class="nav-icon">▤</span>
+                    <span>Lịch sử</span>
+                </a>
+
+                <a href="{{ url_for('devices.index') }}"
+                   class="nav-link {% if active_page == 'devices' %}active{% endif %}">
+                    <span class="nav-icon">♧</span>
+                    <span>Thiết bị IoT</span>
+                </a>
+
+                <a href="{{ url_for('compartments.index') }}"
+                   class="nav-link {% if active_page == 'compartments' %}active{% endif %}">
+                    <span class="nav-icon">▦</span>
+                    <span>Phân bổ thuốc</span>
+                </a>
+
+                <span class="nav-link disabled">
+                    <span class="nav-icon">♧</span>
+                    <span>Thông báo</span>
+                </span>
+            </nav>
+
+            {% if current_user.is_authenticated %}
+            <div class="sidebar-bottom">
+                <div class="sidebar-account">
+                    <strong>{{ current_user.full_name }}</strong>
+                    <small>{{ current_user.email }}</small>
+                </div>
+
+                <form method="POST"
+                      action="{{ url_for('auth.logout') }}">
+                    <input type="hidden"
+                           name="csrf_token"
+                           value="{{ csrf_token() }}">
+                    <button type="submit" class="logout-button">
+                        Đăng xuất
+                    </button>
+                </form>
+
+                <div class="version-card">
+                    <div class="version-title">
+                        SmartMed Web v1.0
+                    </div>
+                    <div class="version-description">
+                        Quản lý tủ thuốc thông minh
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </aside>
+
+        <div class="main-area">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <span class="topbar-section">
+                        SMART MEDICINE CABINET
+                    </span>
+                </div>
+
+                <div class="topbar-right">
+                    {% if current_user.is_authenticated %}
+                    <span class="topbar-user-name">
+                        {{ current_user.full_name }}
+                    </span>
+
+                    <div class="user-avatar">
+                        {{ current_user.full_name[:1]|upper }}
+                    </div>
+                    {% else %}
+                    <a href="{{ url_for('auth.login') }}">
+                        Đăng nhập
+                    </a>
+                    {% endif %}
+                </div>
+            </header>
+
+            <main class="page-content">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="dashboard-flashes">
+                    {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+</body>
+</html>

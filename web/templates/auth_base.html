@@ -1,0 +1,53 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} | SmartMed</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body class="auth-page">
+    <div class="auth-shell">
+        <section class="auth-promo">
+            <a href="{{ url_for('auth.login') }}" class="auth-brand">
+                <span class="auth-logo">+</span>
+                <span>SmartMed</span>
+            </a>
+            <div class="promo-content">
+                <span class="promo-label">SMART MEDICINE CABINET</span>
+                <h1>Quản lý thuốc<br>thông minh hơn.</h1>
+                <p>
+                    Tổ chức danh mục thuốc, thiết lập lịch nhắc
+                    và theo dõi hoạt động của tủ thuốc trên
+                    một nền tảng duy nhất.
+                </p>
+                <div class="promo-features">
+                    <div>✓ Quản lý danh mục thuốc</div>
+                    <div>✓ Thiết lập lịch dùng thuốc</div>
+                    <div>✓ Theo dõi thiết bị IoT</div>
+                </div>
+            </div>
+            <div class="promo-footer">Smart Medicine Cabinet · Web v1.0</div>
+        </section>
+
+        <section class="auth-main">
+            <div class="auth-form-wrap">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-list">
+                            {% for category, message in messages %}
+                                <div class="flash-message {{ category }}">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+                {% block auth_content %}{% endblock %}
+            </div>
+        </section>
+    </div>
+</body>
+</html>

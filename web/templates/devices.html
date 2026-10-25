@@ -1,0 +1,280 @@
+
+{% extends "base.html" %}
+{% block page_css %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/devices.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="device-page">
+    <div class="device-page-heading">
+        <div>
+            <div class="eyebrow">QUẢN LÝ PHẦN CỨNG</div>
+            <h1>Thiết bị IoT</h1>
+            <p>
+                Đăng ký tủ thuốc, quản lý các ngăn và
+                chuẩn bị đồng bộ lịch uống thuốc.
+            </p>
+        </div>
+        <div class="device-total">
+            <strong>{{ devices|length }}</strong>
+            <span>Thiết bị đã tạo</span>
+        </div>
+    </div>
+
+    <section class="device-panel">
+        <div class="device-section-heading">
+            <h2>Đăng ký tủ thuốc</h2>
+            <p>
+                Tạo một thiết bị trong MySQL để sử dụng
+                khi thiết lập lịch uống thuốc.
+            </p>
+        </div>
+
+        <form method="POST"
+              action="{{ url_for('devices.create_device') }}"
+              class="device-create-form">
+
+            <input type="hidden" name="csrf_token"
+                   value="{{ csrf_token() }}">
+
+            <div class="device-form-field">
+                <label for="deviceName">Tên tủ thuốc *</label>
+                <input
+                    id="deviceName"
+                    name="device_name"
+                    type="text"
+                    maxlength="150"
+                    minlength="2"
+                    placeholder="Ví dụ: Tủ thuốc phòng ngủ"
+                    required>
+            </div>
+
+            <div class="device-form-field">
+                <label for="deviceNotes">Ghi chú</label>
+                <textarea
+                    id="deviceNotes"
+                    name="notes"
+                    rows="2"
+                    maxlength="1000"
+                    placeholder="Vị trí đặt tủ hoặc thông tin ghi nhớ"></textarea>
+            </div>
+
+            <div class="device-create-footer">
+                <div class="device-hint">
+                    <strong>Cấu hình mặc định:</strong>
+                    ESP32-CAM + Arduino Nano, 4 ngăn thuốc.
+                </div>
+                <button type="submit" class="device-primary-btn">
+                    + Tạo thiết bị
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <section class="device-section">
+        <div class="device-section-heading">
+            <h2>Danh sách thiết bị</h2>
+            <p>
+                Thiết bị được tạo trên Web chưa có nghĩa
+                là ESP32-CAM đã kết nối.
+            </p>
+        </div>
+
+        {% if devices %}
+        <div class="device-list">
+            {% for device in devices %}
+            <article class="device-card">
+                <div class="device-card-header">
+                    <div class="device-card-identity">
+                        <div class="device-main-icon">IoT</div>
+                        <div>
+                            <h3>{{ device.device_name }}</h3>
+                            <div class="device-code">
+                                Mã: <strong>{{ device.device_code }}</strong>
+                            </div>
+                            <p>
+                                {{ device.hardware_model or
+                                   "ESP32-CAM + Arduino Nano" }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="device-badges">
+                        {% if device.operational_status == 'disabled' %}
+                            <span class="device-pill disabled">
+                                Đã tạm ngừng
+                            </span>
+                        {% elif device.is_online %}
+                            <span class="device-pill online">
+                                Đang trực tuyến
+                            </span>
+                        {% elif device.last_seen_at %}
+                            <span class="device-pill offline">
+                                Mất kết nối
+                            </span>
+                        {% else %}
+                            <span class="device-pill offline">
+                                Chưa kết nối
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="device-info-grid">
+                    <div class="device-info-item">
+                        <span>Ngăn thuốc</span>
+                        <strong>
+                            {{ compartments_by_device.get(device.id, [])|length }}/4
+                        </strong>
+                    </div>
+
+                    <div class="device-info-item">
+                        <span>Lịch đang hoạt động</span>
+                        <strong>{{ device.active_schedules }}</strong>
+                    </div>
+
+                    <div class="device-info-item">
+                        <span>Phiên bản lịch</span>
+                        <strong>{{ device.schedule_revision }}</strong>
+                    </div>
+
+                    <div class="device-info-item">
+                        <span>Lần liên hệ cuối</span>
+                        {% if device.last_seen_at %}
+                        <strong>
+                            {{ device.last_seen_at.strftime('%d/%m/%Y %H:%M') }}
+                            UTC
+                        </strong>
+                        {% else %}
+                        <strong>Chưa có</strong>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="device-compartment-section">
+                    <h4>Bốn ngăn thuốc</h4>
+
+                    <div class="device-compartment-grid">
+                        {% for compartment in compartments_by_device.get(device.id, []) %}
+                        <div class="device-compartment">
+                            <span class="device-compartment-icon">✚</span>
+                            <strong>
+                                {{ compartment.compartment_name or
+                                   ('Ngăn ' ~ compartment.compartment_number) }}
+                            </strong>
+                            <small>
+                                {% if compartment.is_enabled %}
+                                    Sẵn sàng cấu hình
+                                {% else %}
+                                    Đã vô hiệu hóa
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if compartments_by_device.get(device.id, [])|length != 4 %}
+                    <div class="device-warning">
+                        Thiết bị chưa đủ 4 ngăn.
+                        Cần kiểm tra lại dữ liệu trong MySQL.
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="device-connection-notice">
+                    <strong>Trạng thái ghép nối</strong>
+                    {% if device.last_seen_at %}
+                    <p>
+                        Thiết bị từng gửi trạng thái về server.
+                        Lần liên hệ gần nhất được hiển thị phía trên.
+                    </p>
+                    {% else %}
+                    <p>
+                        Chưa nhận được tín hiệu từ ESP32-CAM.
+                        Chúng ta sẽ ghép nối phần cứng ở
+                        giai đoạn xây dựng API IoT.
+                    </p>
+                    {% endif %}
+                </div>
+
+                {% if device.notes %}
+                <div class="device-notes">
+                    <strong>Ghi chú:</strong>
+                    {{ device.notes }}
+                </div>
+                {% endif %}
+
+                <div class="device-actions">
+                    <details class="device-edit">
+                        <summary>Chỉnh sửa thông tin</summary>
+
+                        <form
+                            method="POST"
+                            action="{{ url_for('devices.edit_device', device_id=device.id) }}"
+                            class="device-edit-form">
+
+                            <input type="hidden"
+                                   name="csrf_token"
+                                   value="{{ csrf_token() }}">
+
+                            <div class="device-form-field">
+                                <label>Tên thiết bị</label>
+                                <input
+                                    type="text"
+                                    name="device_name"
+                                    value="{{ device.device_name }}"
+                                    minlength="2"
+                                    maxlength="150"
+                                    required>
+                            </div>
+
+                            <div class="device-form-field">
+                                <label>Ghi chú</label>
+                                <textarea
+                                    name="notes"
+                                    rows="2"
+                                    maxlength="1000">{{ device.notes or '' }}</textarea>
+                            </div>
+
+                            <button type="submit" class="device-primary-btn">
+                                Lưu thay đổi
+                            </button>
+                        </form>
+                    </details>
+
+                    <form
+                        method="POST"
+                        action="{{ url_for('devices.toggle_device', device_id=device.id) }}">
+
+                        <input type="hidden"
+                               name="csrf_token"
+                               value="{{ csrf_token() }}">
+
+                        {% if device.operational_status == 'active' %}
+                        <button type="submit" class="device-muted-btn">
+                            Tạm ngừng thiết bị
+                        </button>
+                        {% else %}
+                        <button type="submit" class="device-primary-btn">
+                            Kích hoạt lại
+                        </button>
+                        {% endif %}
+                    </form>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="device-empty">
+            <div class="device-empty-icon">IoT</div>
+            <h3>Chưa có thiết bị nào</h3>
+            <p>
+                Hãy đăng ký tủ thuốc đầu tiên bằng biểu mẫu
+                phía trên. Hệ thống sẽ tự tạo 4 ngăn.
+            </p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

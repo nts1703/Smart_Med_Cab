@@ -944,3 +944,53 @@ SELECT
     source_name,
     source_type
 FROM drug_sources;
+
+
+
+
+
+-- Update database để thêm được thuốc cho từng ngăn
+USE `Med`;
+
+-- Lay dung kieu du lieu ID cua bang user_medicines.
+SET @medicine_id_type = (
+    SELECT COLUMN_TYPE
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'user_medicines'
+      AND COLUMN_NAME = 'id'
+    LIMIT 1
+);
+
+-- Them cot gan thuoc vao bang 4 ngan.
+SET @sql = CONCAT(
+    'ALTER TABLE device_compartments ',
+    'ADD COLUMN user_medicine_id ',
+    @medicine_id_type,
+    ' NULL, ',
+    'ADD INDEX idx_dc_user_medicine (user_medicine_id), ',
+    'ADD CONSTRAINT fk_dc_user_medicine ',
+    'FOREIGN KEY (user_medicine_id) ',
+    'REFERENCES user_medicines(id) ',
+    'ON DELETE RESTRICT ON UPDATE RESTRICT'
+);
+
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Luu lai lich su thay doi thuoc trong cac ngan.
+CREATE TABLE IF NOT EXISTS compartment_assignment_history (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    device_id BIGINT UNSIGNED NOT NULL,
+    compartment_number TINYINT UNSIGNED NOT NULL,
+    previous_user_medicine_id BIGINT UNSIGNED NULL,
+    new_user_medicine_id BIGINT UNSIGNED NULL,
+    previous_medicine_name VARCHAR(255) NULL,
+    new_medicine_name VARCHAR(255) NULL,
+    changed_by_user_id BIGINT UNSIGNED NOT NULL,
+    changed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_assignment_device (device_id, changed_at),
+    INDEX idx_assignment_user (changed_by_user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

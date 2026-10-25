@@ -1,0 +1,199 @@
+
+.comp-page { max-width: 1250px; }
+.comp-heading { margin-bottom: 22px; }
+.comp-heading h1 { font-size: 28px; margin: 8px 0; }
+.comp-heading p {
+    color: #8190a5;
+    font-size: 13px;
+    line-height: 1.7;
+}
+.comp-notice {
+    padding: 16px 20px;
+    border: 1px solid #f3dfb8;
+    border-radius: 12px;
+    background: #fff9ed;
+    color: #8d692d;
+    font-size: 12px;
+    line-height: 1.7;
+    margin-bottom: 23px;
+}
+.comp-notice a { color: #2166e8; font-weight: 700; }
+.comp-empty {
+    padding: 30px;
+    background: white;
+    border: 1px solid #e6ebf3;
+    border-radius: 15px;
+    text-align: center;
+}
+.comp-empty h2 { font-size: 18px; }
+.comp-empty p { color: #8492a6; font-size: 12px; }
+.comp-primary {
+    display: inline-block;
+    padding: 11px 16px;
+    margin-top: 12px;
+    background: #2166e8;
+    color: white;
+    border-radius: 9px;
+    text-decoration: none;
+}
+.comp-device-card, .comp-history {
+    padding: 23px;
+    border-radius: 16px;
+    background: #fff;
+    border: 1px solid #e6ebf3;
+    margin-bottom: 23px;
+}
+.comp-device-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 24px;
+}
+.comp-device-head h2 {
+    font-size: 18px;
+    margin: 0 0 7px;
+}
+.comp-device-head p {
+    font-size: 12px;
+    color: #8793a5;
+    margin: 0;
+}
+.comp-device-status {
+    border-radius: 25px;
+    padding: 8px 12px;
+    background: #eef3fc;
+    color: #627999;
+    font-size: 11px;
+    white-space: nowrap;
+}
+.comp-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 15px;
+}
+.comp-slot {
+    min-width: 0;
+    background: #fafcff;
+    border: 1px solid #e0e9f6;
+    border-radius: 13px;
+    padding: 17px;
+}
+.comp-slot-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 14px;
+}
+.comp-slot-number {
+    display: grid;
+    place-items: center;
+    width: 39px;
+    height: 39px;
+    background: #e5efff;
+    color: #2166e8;
+    border-radius: 11px;
+    font-size: 19px;
+    font-weight: 800;
+}
+.comp-tag {
+    color: #78879b;
+    background: #eaf0f6;
+    padding: 6px 9px;
+    border-radius: 20px;
+    font-size: 10px;
+    white-space: nowrap;
+}
+.comp-tag.assigned {
+    background: #e0f7e9;
+    color: #168253;
+}
+.comp-slot h3 { font-size: 15px; margin: 0 0 13px; }
+.comp-current {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-height: 88px;
+    padding: 13px;
+    background: #fff;
+    border: 1px solid #e9edf4;
+    border-radius: 9px;
+}
+.comp-current strong {
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+.comp-current small {
+    color: #8896a9;
+    font-size: 11px;
+}
+.comp-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 16px;
+}
+.comp-form label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #526078;
+}
+.comp-form select {
+    width: 100%;
+    min-width: 0;
+    border-radius: 9px;
+    padding: 11px 9px;
+    background: white;
+    border: 1px solid #dce5f2;
+    color: #273750;
+    font: inherit;
+    font-size: 12px;
+}
+.comp-save {
+    padding: 11px;
+    border: 0;
+    background: #2166e8;
+    color: white;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 9px;
+    cursor: pointer;
+}
+.comp-save:hover { background: #1950bd; }
+.comp-save:disabled {
+    background: #b5c0d1;
+    cursor: not-allowed;
+}
+.comp-warning-text, .comp-schedule-alert {
+    color: #b16e25 !important;
+    font-size: 11px;
+    line-height: 1.6;
+}
+.comp-history h2 { font-size: 18px; margin-bottom: 19px; }
+.comp-history-scroll { overflow-x: auto; }
+.comp-history table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    text-align: left;
+}
+.comp-history th, .comp-history td {
+    padding: 13px 10px;
+    border-bottom: 1px solid #e9eef6;
+    vertical-align: top;
+}
+.comp-history th { color: #7c8ba0; font-weight: 700; }
+.comp-history td { color: #3b4d66; }
+@media (max-width: 1150px) {
+    .comp-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 760px) {
+    .comp-device-head { flex-direction: column; }
+    .comp-device-card, .comp-history { padding: 16px; }
+}
+@media (max-width: 520px) {
+    .comp-grid { grid-template-columns: 1fr; }
+}

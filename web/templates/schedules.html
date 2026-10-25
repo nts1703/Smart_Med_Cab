@@ -1,0 +1,513 @@
+
+{% extends "base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/schedules.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="schedule-page">
+    <div class="schedule-heading">
+        <div>
+            <div class="eyebrow">QUẢN LÝ LỊCH NHẮC</div>
+            <h1>Lịch uống thuốc</h1>
+            <p>
+                Thiết lập giờ nhắc và liều dùng theo đơn
+                cho thuốc đã phân bổ vào từng ngăn.
+            </p>
+        </div>
+    </div>
+
+    <div class="schedule-stats">
+        <div class="schedule-stat">
+            <span>Tổng số lịch</span>
+            <strong>{{ schedules|length }}</strong>
+        </div>
+        <div class="schedule-stat">
+            <span>Đang hoạt động</span>
+            <strong class="schedule-stat-green">
+                {{ total_active }}
+            </strong>
+        </div>
+        <div class="schedule-stat">
+            <span>Đang tạm dừng</span>
+            <strong class="schedule-stat-orange">
+                {{ total_paused }}
+            </strong>
+        </div>
+    </div>
+
+    <div class="schedule-notice">
+        <strong>Lưu ý:</strong>
+        Chỉ nhập liều dùng và thời gian theo đơn
+        hoặc hướng dẫn phù hợp từ nhân viên y tế.
+        Việc tạo lịch trên Web chưa đồng bộ xuống
+        ESP32-CAM. Cảm biến lấy thuốc cũng không
+        xác nhận người dùng đã uống thuốc.
+    </div>
+
+    <section class="schedule-panel">
+        <div class="schedule-panel-heading">
+            <h2>Thêm lịch uống thuốc</h2>
+            <p>
+                Chọn ngăn đã gán thuốc. Tên thuốc
+                được lấy tự động từ ngăn đó.
+            </p>
+        </div>
+
+        {% if not slots %}
+        <div class="schedule-empty-guide">
+            <strong>Chưa có ngăn nào sẵn sàng tạo lịch.</strong>
+            <p>
+                Hãy tạo tủ, thêm thuốc và phân bổ
+                thuốc vào một trong bốn ngăn trước.
+            </p>
+            <a href="{{ url_for('compartments.index') }}">
+                Đi tới Phân bổ thuốc
+            </a>
+        </div>
+        {% endif %}
+
+        <form method="POST"
+              action="{{ url_for('schedules.create') }}"
+              class="schedule-form"
+              data-schedule-form>
+
+            <input type="hidden" name="csrf_token"
+                   value="{{ csrf_token() }}">
+
+            <div class="schedule-field">
+                <label for="scheduleSlot">
+                    Chọn ngăn chứa thuốc *
+                </label>
+                <select id="scheduleSlot"
+                        name="slot_id" required
+                        {% if not slots %}disabled{% endif %}>
+                    <option value="">
+                        -- Chọn tủ và ngăn thuốc --
+                    </option>
+
+                    {% for slot in slots %}
+                    <option
+                        value="{{ slot.slot_id }}"
+                        data-medicine="{{ slot.medicine_name }}"
+                        data-strength="{{ slot.strength or '' }}"
+                        data-compartment="{{ slot.compartment_number }}">
+                        {{ slot.device_name }}
+                        – Ngăn {{ slot.compartment_number }}
+                        – {{ slot.medicine_name }}
+                        {% if slot.strength %}
+                            ({{ slot.strength }})
+                        {% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="selectedScheduleMedicine"
+                 class="schedule-selected" hidden>
+            </div>
+
+            <div class="schedule-two-cols">
+                <div class="schedule-field">
+                    <label for="doseQuantity">
+                        Liều mỗi lần theo đơn *
+                    </label>
+                    <input
+                        id="doseQuantity"
+                        type="number"
+                        name="dose_quantity"
+                        min="0.001"
+                        max="9999"
+                        step="0.001"
+                        placeholder="Ví dụ: 1"
+                        required>
+                </div>
+
+                <div class="schedule-field">
+                    <label for="doseUnit">
+                        Đơn vị *
+                    </label>
+                    <select id="doseUnit"
+                            name="dose_unit" required>
+                        {% for unit in dose_units %}
+                        <option value="{{ unit }}"
+                                {% if unit == "viên" %}selected{% endif %}>
+                            {{ unit }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="schedule-two-cols">
+                <div class="schedule-field">
+                    <label for="reminderTime">
+                        Giờ nhắc *
+                    </label>
+                    <input
+                        id="reminderTime"
+                        type="time"
+                        name="reminder_time"
+                        step="60"
+                        required>
+                </div>
+
+                <div class="schedule-field">
+                    <label for="graceMinutes">
+                        Thời gian chờ sau khi nhắc
+                    </label>
+                    <div class="schedule-input-suffix">
+                        <input
+                            id="graceMinutes"
+                            type="number"
+                            name="grace_minutes"
+                            min="1"
+                            max="180"
+                            value="15"
+                            required>
+                        <span>phút</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="schedule-field">
+                <label>Ngày lặp lại trong tuần *</label>
+                <div class="schedule-day-grid">
+                    {% for day in days %}
+                    <label class="schedule-day">
+                        <input
+                            type="checkbox"
+                            name="days"
+                            value="{{ day.bit }}"
+                            checked>
+                        <span>{{ day.label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="schedule-two-cols">
+                <div class="schedule-field">
+                    <label for="startDate">
+                        Ngày bắt đầu *
+                    </label>
+                    <input
+                        id="startDate"
+                        type="date"
+                        name="start_date"
+                        value="{{ today_iso }}"
+                        min="{{ today_iso }}"
+                        required>
+                </div>
+
+                <div class="schedule-field">
+                    <label for="endDate">
+                        Ngày kết thúc (không bắt buộc)
+                    </label>
+                    <input
+                        id="endDate"
+                        type="date"
+                        name="end_date">
+                </div>
+            </div>
+
+            <div class="schedule-field">
+                <label for="scheduleInstructions">
+                    Ghi chú theo đơn / hướng dẫn
+                </label>
+                <textarea
+                    id="scheduleInstructions"
+                    name="instructions"
+                    maxlength="2000"
+                    rows="3"
+                    placeholder="Nhập hướng dẫn liên quan đến lịch nếu có"></textarea>
+            </div>
+
+            <button type="submit"
+                    class="schedule-primary-button"
+                    {% if not slots %}disabled{% endif %}>
+                + Lưu lịch uống thuốc
+            </button>
+        </form>
+    </section>
+
+    <section class="schedule-panel">
+        <div class="schedule-panel-heading">
+            <h2>Danh sách lịch đã thiết lập</h2>
+            <p>
+                Các lịch được lưu trong bảng
+                medicine_schedules của MySQL.
+            </p>
+        </div>
+
+        {% if schedules %}
+        <div class="schedule-list">
+            {% for s in schedules %}
+            <article class="schedule-item">
+                <div class="schedule-item-header">
+                    <div>
+                        <div class="schedule-time">
+                            {{ s.time_hhmm }}
+                            <span>UTC+7</span>
+                        </div>
+                        <h3>{{ s.medicine_name }}</h3>
+                        <p>
+                            {{ s.strength or "Chưa có hàm lượng" }}
+                            · {{ s.device_name }}
+                            · Ngăn {{ s.compartment_number }}
+                        </p>
+                    </div>
+
+                    {% if s.status == "active" %}
+                    <span class="schedule-status active">
+                        Đang hoạt động
+                    </span>
+                    {% elif s.status == "paused" %}
+                    <span class="schedule-status paused">
+                        Đang tạm dừng
+                    </span>
+                    {% else %}
+                    <span class="schedule-status completed">
+                        Đã kết thúc
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div class="schedule-item-details">
+                    <div>
+                        <span>Liều mỗi lần</span>
+                        <strong>
+                            {{ s.dose_quantity }}
+                            {{ s.dose_unit }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>Lặp lại</span>
+                        <strong>{{ s.days_label }}</strong>
+                    </div>
+
+                    <div>
+                        <span>Ngày bắt đầu</span>
+                        <strong>
+                            {{ s.start_date.strftime('%d/%m/%Y') }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>Ngày kết thúc</span>
+                        <strong>
+                            {% if s.end_date %}
+                                {{ s.end_date.strftime('%d/%m/%Y') }}
+                            {% else %}
+                                Không giới hạn
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>Chờ lấy thuốc</span>
+                        <strong>{{ s.grace_minutes }} phút</strong>
+                    </div>
+
+                    <div>
+                        <span>Phiên bản lịch</span>
+                        <strong>{{ s.revision }}</strong>
+                    </div>
+                </div>
+
+                {% if s.instructions %}
+                <div class="schedule-instructions">
+                    <strong>Ghi chú:</strong>
+                    {{ s.instructions }}
+                </div>
+                {% endif %}
+
+                {% if not s.assignment_matches %}
+                <div class="schedule-warning">
+                    Thuốc hiện được gán trong ngăn không còn
+                    khớp với lịch này. Hãy kiểm tra Phân bổ thuốc.
+                </div>
+                {% endif %}
+
+                {% if s.status != "completed" %}
+                <div class="schedule-actions">
+                    <details class="schedule-edit">
+                        <summary>Chỉnh sửa lịch</summary>
+
+                        <form method="POST"
+                              data-schedule-form
+                              class="schedule-form"
+                              action="{{ url_for('schedules.edit', schedule_id=s.id) }}">
+
+                            <input
+                                type="hidden"
+                                name="csrf_token"
+                                value="{{ csrf_token() }}">
+
+                            <p class="schedule-edit-note">
+                                Thuốc và ngăn được giữ nguyên.
+                                Muốn chuyển thuốc sang ngăn khác,
+                                hãy kết thúc lịch cũ rồi phân bổ lại.
+                            </p>
+
+                            <div class="schedule-two-cols">
+                                <div class="schedule-field">
+                                    <label>Liều mỗi lần *</label>
+                                    <input
+                                        type="number"
+                                        name="dose_quantity"
+                                        min="0.001"
+                                        max="9999"
+                                        step="0.001"
+                                        value="{{ s.dose_quantity }}"
+                                        required>
+                                </div>
+
+                                <div class="schedule-field">
+                                    <label>Đơn vị *</label>
+                                    <select name="dose_unit" required>
+                                        {% for unit in dose_units %}
+                                        <option
+                                            value="{{ unit }}"
+                                            {% if unit == s.dose_unit %}
+                                            selected
+                                            {% endif %}>
+                                            {{ unit }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="schedule-two-cols">
+                                <div class="schedule-field">
+                                    <label>Giờ nhắc *</label>
+                                    <input
+                                        type="time"
+                                        name="reminder_time"
+                                        step="60"
+                                        value="{{ s.time_hhmm }}"
+                                        required>
+                                </div>
+
+                                <div class="schedule-field">
+                                    <label>Thời gian chờ (phút)</label>
+                                    <input
+                                        type="number"
+                                        name="grace_minutes"
+                                        min="1"
+                                        max="180"
+                                        value="{{ s.grace_minutes }}"
+                                        required>
+                                </div>
+                            </div>
+
+                            <div class="schedule-field">
+                                <label>Ngày lặp *</label>
+                                <div class="schedule-day-grid">
+                                    {% for day in days %}
+                                    <label class="schedule-day">
+                                        <input
+                                            type="checkbox"
+                                            name="days"
+                                            value="{{ day.bit }}"
+                                            {% if day.bit in s.selected_days %}
+                                            checked
+                                            {% endif %}>
+                                        <span>{{ day.label }}</span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <div class="schedule-two-cols">
+                                <div class="schedule-field">
+                                    <label>Ngày bắt đầu *</label>
+                                    <input
+                                        type="date"
+                                        name="start_date"
+                                        value="{{ s.start_date.isoformat() }}"
+                                        required>
+                                </div>
+
+                                <div class="schedule-field">
+                                    <label>Ngày kết thúc</label>
+                                    <input
+                                        type="date"
+                                        name="end_date"
+                                        value="{{ s.end_date.isoformat() if s.end_date else '' }}">
+                                </div>
+                            </div>
+
+                            <div class="schedule-field">
+                                <label>Ghi chú</label>
+                                <textarea
+                                    name="instructions"
+                                    rows="2"
+                                    maxlength="2000">{{ s.instructions or '' }}</textarea>
+                            </div>
+
+                            <button type="submit"
+                                    class="schedule-primary-button">
+                                Lưu thay đổi
+                            </button>
+                        </form>
+                    </details>
+
+                    {% if s.status == "active" %}
+                    <form method="POST"
+                          action="{{ url_for('schedules.pause', schedule_id=s.id) }}">
+                        <input type="hidden" name="csrf_token"
+                               value="{{ csrf_token() }}">
+                        <button type="submit"
+                                class="schedule-secondary-button">
+                            Tạm dừng
+                        </button>
+                    </form>
+                    {% elif s.status == "paused" %}
+                    <form method="POST"
+                          action="{{ url_for('schedules.resume', schedule_id=s.id) }}">
+                        <input type="hidden" name="csrf_token"
+                               value="{{ csrf_token() }}">
+                        <button type="submit"
+                                class="schedule-secondary-button">
+                            Kích hoạt lại
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <form method="POST"
+                          action="{{ url_for('schedules.complete', schedule_id=s.id) }}"
+                          onsubmit="return confirm('Kết thúc lịch này? Lịch đã kết thúc sẽ không thể kích hoạt lại.');">
+                        <input type="hidden"
+                               name="csrf_token"
+                               value="{{ csrf_token() }}">
+                        <button type="submit"
+                                class="schedule-danger-button">
+                            Kết thúc lịch
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="schedule-empty">
+            <strong>Chưa có lịch uống thuốc</strong>
+            <p>
+                Hãy chọn một ngăn đã gán thuốc và
+                thiết lập lịch nhắc đầu tiên.
+            </p>
+        </div>
+        {% endif %}
+    </section>
+</section>
+
+<script defer
+        src="{{ url_for('static', filename='js/schedules.js') }}">
+</script>
+{% endblock %}

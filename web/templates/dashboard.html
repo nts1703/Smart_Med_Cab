@@ -1,0 +1,202 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <div class="eyebrow">TỔNG QUAN HỆ THỐNG</div>
+        <h1>Smart Medicine Cabinet</h1>
+        <p>
+            Quản lý danh mục thuốc, lịch nhắc và thiết bị IoT
+            trên cùng một hệ thống.
+        </p>
+    </div>
+</div>
+
+<section class="welcome-panel">
+    <div>
+        <span class="welcome-kicker">SMARTMED PLATFORM</span>
+        <h2>Xin chào!</h2>
+        <p>
+            Website đã được khởi tạo. Dưới đây là trạng thái
+            kết nối cơ sở dữ liệu và danh mục thuốc.
+        </p>
+    </div>
+    <div class="welcome-symbol">+</div>
+</section>
+
+<section class="section">
+    <div class="section-header">
+        <div>
+            <h2>Tổng quan dữ liệu</h2>
+            <p>Thống kê trực tiếp từ MySQL Med</p>
+        </div>
+        {% if db_connected %}
+        <span class="status-pill connected">
+            <span class="status-dot"></span>
+            MySQL đã kết nối
+        </span>
+        {% else %}
+        <span class="status-pill disconnected">
+            <span class="status-dot"></span>
+            MySQL chưa kết nối
+        </span>
+        {% endif %}
+    </div>
+
+    <div class="stats-grid">
+        <article class="stat-card">
+            <div class="stat-top">
+                <span>Tổng danh mục thuốc</span>
+                <div class="stat-icon blue">✚</div>
+            </div>
+            <div class="stat-value">
+                {% if db_connected %}
+                    {{ "{:,}".format(statistics.total_drugs) }}
+                {% else %}
+                    —
+                {% endif %}
+            </div>
+            <div class="stat-foot">
+                Sản phẩm đã lưu trong drug_catalog
+            </div>
+        </article>
+
+        <article class="stat-card">
+            <div class="stat-top">
+                <span>Chưa xác minh</span>
+                <div class="stat-icon orange">!</div>
+            </div>
+            <div class="stat-value">
+                {% if db_connected %}
+                    {{ "{:,}".format(statistics.unverified_drugs) }}
+                {% else %}
+                    —
+                {% endif %}
+            </div>
+            <div class="stat-foot">
+                Chưa xác nhận tình trạng lưu hành
+            </div>
+        </article>
+
+        <article class="stat-card">
+            <div class="stat-top">
+                <span>Đã xác minh và được duyệt</span>
+                <div class="stat-icon green">✓</div>
+            </div>
+            <div class="stat-value">
+                {% if db_connected %}
+                    {{ "{:,}".format(statistics.verified_drugs) }}
+                {% else %}
+                    —
+                {% endif %}
+            </div>
+            <div class="stat-foot">
+                Đủ điều kiện hiển thị trong danh mục đã duyệt
+            </div>
+        </article>
+    </div>
+</section>
+
+<section class="section">
+    <div class="two-columns">
+        <article class="content-card">
+            <div class="card-header">
+                <div>
+                    <h2>Trạng thái hệ thống</h2>
+                    <p>Các thành phần của dự án</p>
+                </div>
+            </div>
+            <div class="system-list">
+                <div class="system-row">
+                    <div class="system-info">
+                        <div class="system-icon">DB</div>
+                        <div>
+                            <strong>MySQL Database</strong>
+                            <small>Database Med</small>
+                        </div>
+                    </div>
+                    {% if db_connected %}
+                    <span class="small-status success">Đã kết nối</span>
+                    {% else %}
+                    <span class="small-status warning">Có lỗi</span>
+                    {% endif %}
+                </div>
+                <div class="system-row">
+                    <div class="system-info">
+                        <div class="system-icon">API</div>
+                        <div>
+                            <strong>Flask Backend</strong>
+                            <small>Web server</small>
+                        </div>
+                    </div>
+                    <span class="small-status success">Đang chạy</span>
+                </div>
+                <div class="system-row">
+                    <div class="system-info">
+                        <div class="system-icon">IoT</div>
+                        <div>
+                            <strong>ESP32-CAM & Arduino Nano</strong>
+                            <small>Chưa tích hợp vào web</small>
+                        </div>
+                    </div>
+                    <span class="small-status neutral">Chưa kết nối</span>
+                </div>
+            </div>
+        </article>
+
+        <article class="content-card">
+            <div class="card-header">
+                <div>
+                    <h2>Tiến độ phát triển</h2>
+                    <p>Các module chúng ta sẽ xây dựng</p>
+                </div>
+            </div>
+            <div class="milestone-list">
+                <div class="milestone">
+                    <span class="milestone-marker done">✓</span>
+                    <div>
+                        <strong>Khởi tạo Flask</strong>
+                        <small>Website và cấu hình cơ bản</small>
+                    </div>
+                </div>
+                <div class="milestone">
+                    <span class="milestone-marker done">✓</span>
+                    <div>
+                        <strong>Module kết nối MySQL</strong>
+                        <small>Kiểm tra trạng thái ở bảng bên cạnh</small>
+                    </div>
+                </div>
+                <div class="milestone">
+                    <span class="milestone-marker pending">3</span>
+                    <div>
+                        <strong>Đăng ký và đăng nhập</strong>
+                        <small>Module tiếp theo</small>
+                    </div>
+                </div>
+                <div class="milestone">
+                    <span class="milestone-marker pending">4</span>
+                    <div>
+                        <strong>Quản lý thuốc và lịch uống</strong>
+                        <small>Giao diện và các thao tác CRUD</small>
+                    </div>
+                </div>
+                <div class="milestone">
+                    <span class="milestone-marker pending">5</span>
+                    <div>
+                        <strong>Kết nối IoT</strong>
+                        <small>API cho ESP32-CAM</small>
+                    </div>
+                </div>
+            </div>
+        </article>
+    </div>
+</section>
+
+<div class="notice">
+    <strong>Lưu ý dữ liệu thuốc:</strong>
+    Dữ liệu thu thập đã lưu vào database không đồng nghĩa
+    mọi sản phẩm đều đang được phép lưu hành.
+    Trạng thái đăng ký cần được đối chiếu với cơ quan quản lý.
+</div>
+{% endblock %}
